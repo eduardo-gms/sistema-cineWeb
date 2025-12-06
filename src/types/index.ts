@@ -23,3 +23,11 @@ export interface Sessao {
     filme?: Filme;
     sala?: Sala;
 }
+
+export interface Ingresso {
+    id: string;
+    sessaoId: string;
+    quantidadeInteiras: number;
+    quantidadeMeias: number;
+    valorTotal: number;
+}
