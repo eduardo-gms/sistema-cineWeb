@@ -13,7 +13,8 @@ services:
   backend:
     image: node:20-alpine
     working_dir: /data
-    command: npx json-server --watch db.json --port 3000 --host 0.0.0.0
+    # AQUI ESTÁ A MUDANÇA: adicionamos @0.17.4
+    command: npx json-server@0.17.4 --watch db.json --port 3000 --host 0.0.0.0
     ports:
       - "3000:3000"
     volumes:
