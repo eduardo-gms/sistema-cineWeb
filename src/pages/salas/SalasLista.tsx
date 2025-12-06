@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../../services/api';
-import { Sala } from '../../types';
+import { type Sala } from '../../types';
 import { Link } from 'react-router-dom';
 
 const SalasLista = () => {

@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import api from '../../services/api';
-import { Filme, Sala, Sessao } from '../../types';
+import { type Filme, type Sala, type Sessao } from '../../types';
 
 // Validação de Agendamento
 const sessaoSchema = z.object({

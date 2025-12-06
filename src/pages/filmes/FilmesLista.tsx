@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../../services/api';
-import { Filme } from '../../types';
+import type { Filme } from '../../types';
 import { Link } from 'react-router-dom';
 
 const FilmesLista = () => {
