@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: .
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./src:/app/src
+    depends_on:
+      - backend
+
+  backend:
+    image: node:20-alpine
+    working_dir: /data
+    command: npx json-server --watch db.json --port 3000 --host 0.0.0.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./db.json:/data/db.json
