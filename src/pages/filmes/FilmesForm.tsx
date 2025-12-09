@@ -4,13 +4,19 @@ import { z } from 'zod';
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 
+// Schema atualizado conforme Diagrama de Classes
 const filmeSchema = z.object({
   titulo: z.string().min(1, "Título é obrigatório"),
   sinopse: z.string().min(10, "Sinopse deve ter no mínimo 10 caracteres"),
   duracao: z.number({ invalid_type_error: "Insira um número" }).positive("Duração deve ser positiva"),
   classificacao: z.string().min(1, "Classificação obrigatória"),
   genero: z.string().min(1, "Gênero obrigatório"),
-  dataEstreia: z.string().min(1, "Data obrigatória"),
+  elenco: z.string().min(1, "Elenco é obrigatório"), // [NOVO]
+  dataInicioExibicao: z.string().min(1, "Data inicial obrigatória"), // [NOVO]
+  dataFinalExibicao: z.string().min(1, "Data final obrigatória"),    // [NOVO]
+}).refine(data => new Date(data.dataFinalExibicao) >= new Date(data.dataInicioExibicao), {
+    message: "Data final deve ser posterior à data inicial",
+    path: ["dataFinalExibicao"]
 });
 
 type FilmeSchema = z.infer<typeof filmeSchema>;
@@ -24,7 +30,7 @@ const FilmesForm = () => {
   const onSubmit = async (data: FilmeSchema) => {
     try {
         await api.post('/filmes', data);
-        alert('Filme cadastrado!');
+        alert('Filme cadastrado com sucesso!');
         navigate('/filmes');
     } catch {
         alert("Erro ao cadastrar.");
@@ -40,7 +46,18 @@ const FilmesForm = () => {
           <input {...register('titulo')} className={`form-control ${errors.titulo ? 'is-invalid' : ''}`} />
           <div className="invalid-feedback">{errors.titulo?.message}</div>
         </div>
-        
+
+        {/* Novo Campo: Elenco */}
+        <div className="mb-3">
+            <label className="form-label">Elenco</label>
+            <input 
+                {...register('elenco')} 
+                className={`form-control ${errors.elenco ? 'is-invalid' : ''}`} 
+                placeholder="Ex: Wagner Moura, Selton Mello"
+            />
+            <div className="invalid-feedback">{errors.elenco?.message}</div>
+        </div>
+
         <div className="mb-3">
           <label className="form-label">Sinopse</label>
           <textarea {...register('sinopse')} className={`form-control ${errors.sinopse ? 'is-invalid' : ''}`} />
@@ -48,12 +65,12 @@ const FilmesForm = () => {
         </div>
 
         <div className="row mb-3">
-            <div className="col-md-6">
+            <div className="col-md-4">
                 <label className="form-label">Duração (min)</label>
                 <input type="number" {...register('duracao', { valueAsNumber: true })} className={`form-control ${errors.duracao ? 'is-invalid' : ''}`} />
                 <div className="invalid-feedback">{errors.duracao?.message}</div>
             </div>
-            <div className="col-md-6">
+            <div className="col-md-4">
                 <label className="form-label">Classificação</label>
                 <select {...register('classificacao')} className="form-select">
                     <option value="">Selecione...</option>
@@ -64,12 +81,8 @@ const FilmesForm = () => {
                     <option value="16">16 anos</option>
                     <option value="18">18 anos</option>
                 </select>
-                <div className="text-danger small">{errors.classificacao?.message}</div>
             </div>
-        </div>
-
-        <div className="row mb-3">
-            <div className="col-md-6">
+            <div className="col-md-4">
                 <label className="form-label">Gênero</label>
                 <select {...register('genero')} className="form-select">
                     <option value="">Selecione...</option>
@@ -79,16 +92,24 @@ const FilmesForm = () => {
                     <option value="Terror">Terror</option>
                     <option value="Ficção">Ficção</option>
                 </select>
-                <div className="text-danger small">{errors.genero?.message}</div>
+            </div>
+        </div>
+
+        {/* Novos Campos: Datas de Exibição */}
+        <div className="row mb-3">
+            <div className="col-md-6">
+                <label className="form-label">Início Exibição</label>
+                <input type="date" {...register('dataInicioExibicao')} className={`form-control ${errors.dataInicioExibicao ? 'is-invalid' : ''}`} />
+                <div className="invalid-feedback">{errors.dataInicioExibicao?.message}</div>
             </div>
             <div className="col-md-6">
-                <label className="form-label">Data de Estreia</label>
-                <input type="date" {...register('dataEstreia')} className={`form-control ${errors.dataEstreia ? 'is-invalid' : ''}`} />
-                <div className="invalid-feedback">{errors.dataEstreia?.message}</div>
+                <label className="form-label">Fim Exibição</label>
+                <input type="date" {...register('dataFinalExibicao')} className={`form-control ${errors.dataFinalExibicao ? 'is-invalid' : ''}`} />
+                <div className="invalid-feedback">{errors.dataFinalExibicao?.message}</div>
             </div>
         </div>
         
-        <button type="submit" className="btn btn-primary">Salvar</button>
+        <button type="submit" className="btn btn-primary w-100">Salvar Filme</button>
       </form>
     </div>
   );

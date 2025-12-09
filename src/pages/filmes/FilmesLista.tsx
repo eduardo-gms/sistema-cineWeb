@@ -32,8 +32,14 @@ const FilmesLista = () => {
             <div className="card h-100">
               <div className="card-body">
                 <h5 className="card-title">{filme.titulo}</h5>
-                <p className="card-text text-muted">{filme.genero} | {filme.duracao} min</p>
+                <h6 className="card-subtitle mb-2 text-muted">{filme.genero} | {filme.duracao} min</h6>
+                <p className="card-text small">
+                    <strong>Elenco:</strong> {filme.elenco}
+                </p>
                 <p className="card-text">{filme.sinopse}</p>
+                <p className="card-text"><small className="text-muted">
+                    Exibição: {new Date(filme.dataInicioExibicao).toLocaleDateString()} até {new Date(filme.dataFinalExibicao).toLocaleDateString()}
+                </small></p>
                 <button onClick={() => deletarFilme(filme.id)} className="btn btn-danger btn-sm">
                     <i className="bi bi-trash"></i> Excluir
                 </button>

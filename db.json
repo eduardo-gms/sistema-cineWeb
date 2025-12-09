@@ -2,5 +2,6 @@
   "filmes": [],
   "salas": [],
   "sessoes": [],
-  "ingressos": []
+  "lanches": [], 
+  "pedidos": []  
 }
