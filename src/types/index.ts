@@ -5,9 +5,9 @@ export interface Filme {
     classificacao: string;
     duracao: number;
     genero: string;
-    elenco: string; // [NOVO] Campo do diagrama
-    dataInicioExibicao: string; // [MUDANÇA] Substitui dataEstreia
-    dataFinalExibicao: string;  // [NOVO] Campo do diagrama
+    elenco: string;
+    dataInicioExibicao: string;
+    dataFinalExibicao: string;
 }
 
 export interface Sala {
@@ -21,44 +21,28 @@ export interface Sessao {
     filmeId: string;
     salaId: string;
     dataHora: string;
-    // Dados expandidos para listagem (join)
     filme?: Filme;
     sala?: Sala;
 }
 
-export interface Ingresso {
-    id: string;
+// [NOVO] Definição de Poltrona para o Ingresso
+export interface ItemIngresso {
     sessaoId: string;
-    quantidadeInteiras: number;
-    quantidadeMeias: number;
-    valorTotal: number;
-}
-
-export interface LancheCombo {
-    id: string;
-    nome: string;
-    descricao: string;
+    tipo: 'INTEIRA' | 'MEIA';
+    poltrona: { fila: number; numero: number }; // [REQ: dados poltrona]
     valorUnitario: number;
-    // qtUnidade e subtotal geralmente são calculados no Pedido, 
-    // mas se seguirmos o diagrama estritamente como classe instanciada:
-    qtUnidade?: number; 
-    subtotal?: number;
 }
 
-// [NOVO] Interface Pedido (Agregador principal)
+export interface ItemLanche {
+    nome: string; // [MUDANÇA] Nome direto, pois não temos mais tabela de lanches
+    quantidade: number;
+    valorUnitario: number;
+}
+
 export interface Pedido {
     id: string;
-    itensIngresso: {
-        sessaoId: string;
-        tipo: 'INTEIRA' | 'MEIA';
-        quantidade: number;
-        valorUnitario: number;
-    }[];
-    itensLanche: {
-        lancheId: string;
-        quantidade: number;
-        valorUnitario: number;
-    }[];
+    itensIngresso: ItemIngresso[];
+    itensLanche: ItemLanche[];
     valorTotal: number;
     dataPedido: string;
 }
