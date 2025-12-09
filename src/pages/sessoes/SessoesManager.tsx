@@ -28,6 +28,9 @@ const SessoesManager = () => {
     const [qtdInteira, setQtdInteira] = useState(0);
     const [qtdMeia, setQtdMeia] = useState(0);
     const [carrinhoLanches, setCarrinhoLanches] = useState<{lanche: LancheCombo, qtd: number}[]>([]);
+    
+    // [CORREÇÃO 1] Novo estado para controlar o select de lanches
+    const [lancheSelecionadoId, setLancheSelecionadoId] = useState("");
 
     const { register, handleSubmit, formState: { errors } } = useForm<SessaoSchema>({
         resolver: zodResolver(sessaoSchema)
@@ -62,17 +65,25 @@ const SessoesManager = () => {
 
     // --- Lógica do PDV (Venda) ---
 
-    const adicionarLancheAoCarrinho = (lancheId: string) => {
-        const lanche = lanchesDisponiveis.find(l => l.id === lancheId);
+    const adicionarLancheAoCarrinho = () => {
+        if (!lancheSelecionadoId) return;
+
+        // [CORREÇÃO 2] Comparação segura convertendo ambos para String
+        const lanche = lanchesDisponiveis.find(l => String(l.id) === String(lancheSelecionadoId));
+        
         if (!lanche) return;
 
         setCarrinhoLanches(prev => {
-            const itemExistente = prev.find(i => i.lanche.id === lancheId);
+            // [CORREÇÃO 2] Comparação segura aqui também
+            const itemExistente = prev.find(i => String(i.lanche.id) === String(lancheSelecionadoId));
             if (itemExistente) {
-                return prev.map(i => i.lanche.id === lancheId ? { ...i, qtd: i.qtd + 1 } : i);
+                return prev.map(i => String(i.lanche.id) === String(lancheSelecionadoId) ? { ...i, qtd: i.qtd + 1 } : i);
             }
             return [...prev, { lanche, qtd: 1 }];
         });
+        
+        // Opcional: Limpar a seleção após adicionar
+        setLancheSelecionadoId(""); 
     };
 
     // Constantes de preço (Poderiam vir de uma configuração)
@@ -87,12 +98,23 @@ const SessoesManager = () => {
     const finalizarVenda = async () => {
         if (!sessaoSelecionada) return;
         
-        // Monta o objeto Pedido conforme o diagrama (agregando ingressos e lanches)
+        // [CORREÇÃO 3] Adicionado 'as const' para satisfazer o tipo literal 'INTEIRA' | 'MEIA'
         const novoPedido: Omit<Pedido, 'id'> = {
             itensIngresso: [
-                { sessaoId: sessaoSelecionada.id, tipo: 'INTEIRA', quantidade: qtdInteira, valorUnitario: PRECO_INTEIRA },
-                { sessaoId: sessaoSelecionada.id, tipo: 'MEIA', quantidade: qtdMeia, valorUnitario: PRECO_MEIA }
+                { 
+                    sessaoId: sessaoSelecionada.id, 
+                    tipo: 'INTEIRA' as const, 
+                    quantidade: qtdInteira, 
+                    valorUnitario: PRECO_INTEIRA 
+                },
+                { 
+                    sessaoId: sessaoSelecionada.id, 
+                    tipo: 'MEIA' as const, 
+                    quantidade: qtdMeia, 
+                    valorUnitario: PRECO_MEIA 
+                }
             ].filter(i => i.quantidade > 0),
+            
             itensLanche: carrinhoLanches.map(item => ({
                 lancheId: item.lanche.id,
                 quantidade: item.qtd,
@@ -115,6 +137,7 @@ const SessoesManager = () => {
             setQtdInteira(0);
             setQtdMeia(0);
             setCarrinhoLanches([]);
+            setLancheSelecionadoId("");
         } catch (error) {
             alert("Erro ao processar venda.");
         }
@@ -226,16 +249,22 @@ const SessoesManager = () => {
                                     <div className="col-md-4 border-end">
                                         <h6 className="text-warning border-bottom pb-2">2. Bombonière</h6>
                                         <div className="input-group mb-3">
-                                            <select className="form-select form-select-sm" id="selectLanche">
+                                            {/* [CORREÇÃO 1] Uso do estado lancheSelecionadoId */}
+                                            <select 
+                                                className="form-select form-select-sm" 
+                                                value={lancheSelecionadoId}
+                                                onChange={(e) => setLancheSelecionadoId(e.target.value)}
+                                            >
                                                 <option value="">Selecione um lanche...</option>
                                                 {lanchesDisponiveis.map(l => (
                                                     <option key={l.id} value={l.id}>{l.nome} - R$ {l.valorUnitario.toFixed(2)}</option>
                                                 ))}
                                             </select>
-                                            <button className="btn btn-warning btn-sm" type="button" onClick={() => {
-                                                const select = document.getElementById('selectLanche') as HTMLSelectElement;
-                                                adicionarLancheAoCarrinho(select.value);
-                                            }}>Add</button>
+                                            <button 
+                                                className="btn btn-warning btn-sm" 
+                                                type="button" 
+                                                onClick={adicionarLancheAoCarrinho}
+                                            >Add</button>
                                         </div>
 
                                         <div className="list-group list-group-flush small" style={{ maxHeight: '200px', overflowY: 'auto' }}>
