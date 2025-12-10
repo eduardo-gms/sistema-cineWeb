@@ -5,15 +5,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import api from '../../services/api';
 import type { LancheCombo } from '../../types';
 
-// Schema validado conforme atributos do Diagrama de Classes
+// Schema validado
 const lancheComboSchema = z.object({
   nome: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
   descricao: z.string().min(5, "Descrição é obrigatória (mín. 5 caracteres)"),
   valorUnitario: z.number({ invalid_type_error: "Informe o valor" })
-                  .positive("O valor deve ser positivo")
+                  .positive("O valor deve ser positivo"),
+  estoque: z.number({ invalid_type_error: "Informe a quantidade" })
+            .int("Deve ser um número inteiro")
+            .min(0, "Estoque não pode ser negativo") // [NOVO] Validação de estoque
 });
 
-// Inferência do tipo (ignorando qtUnidade/subtotal que são calculados no pedido)
 type LancheComboForm = z.infer<typeof lancheComboSchema>;
 
 const LancheCombosManager = () => {
@@ -36,12 +38,11 @@ const LancheCombosManager = () => {
 
   const onSubmit = async (data: LancheComboForm) => {
     try {
-      // De acordo com o diagrama, LancheCombo tem estes campos.
-      // Para o cadastro no catálogo, inicializamos quantidade e subtotal com 0.
       const novoLanche: Omit<LancheCombo, 'id'> = {
         ...data,
-        quantidade: 0, // Representa qtUnidade do diagrama
-        subTotal: 0    // Representa subtotal do diagrama
+        quantidade: 0, // Inicia zero no carrinho
+        subTotal: 0    
+        // O campo 'estoque' já vem dentro de 'data'
       };
 
       await api.post('/lancheCombos', novoLanche);
@@ -62,7 +63,7 @@ const LancheCombosManager = () => {
 
   return (
     <div className="container">
-      [cite_start]<h3 className="mb-4">Gerenciar Cardápio (LancheCombo) [cite: 1, 6]</h3>
+      <h3 className="mb-4">Gerenciar Cardápio (LancheCombo)</h3>
       
       <div className="row">
         {/* Formulário de Cadastro */}
@@ -103,6 +104,18 @@ const LancheCombosManager = () => {
                 <div className="invalid-feedback">{errors.valorUnitario?.message}</div>
               </div>
 
+              {/* [NOVO] Campo de Estoque */}
+              <div className="mb-3">
+                <label className="form-label">Quantidade em Estoque</label>
+                <input 
+                  type="number" 
+                  {...register('estoque', { valueAsNumber: true })} 
+                  className={`form-control ${errors.estoque ? 'is-invalid' : ''}`} 
+                  placeholder="Ex: 50"
+                />
+                <div className="invalid-feedback">{errors.estoque?.message}</div>
+              </div>
+
               <button type="submit" className="btn btn-primary w-100">
                 <i className="bi bi-save me-2"></i> Cadastrar
               </button>
@@ -117,17 +130,24 @@ const LancheCombosManager = () => {
               <thead className="table-dark">
                 <tr>
                   <th>Nome</th>
-                  <th>Descrição</th>
                   <th>Valor</th>
+                  <th>Estoque</th> {/* [NOVO] Coluna Estoque */}
                   <th className="text-end">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {lanches.map(item => (
                   <tr key={item.id}>
-                    <td className="fw-bold">{item.nome}</td>
-                    <td className="small text-muted">{item.descricao}</td>
+                    <td>
+                        <span className="fw-bold">{item.nome}</span><br/>
+                        <small className="text-muted">{item.descricao}</small>
+                    </td>
                     <td>R$ {item.valorUnitario.toFixed(2)}</td>
+                    <td>
+                        <span className={`badge ${item.estoque > 0 ? 'bg-success' : 'bg-danger'}`}>
+                            {item.estoque} un
+                        </span>
+                    </td>
                     <td className="text-end">
                       <button 
                         onClick={() => item.id && deletarLanche(item.id)} 

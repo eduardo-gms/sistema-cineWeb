@@ -39,16 +39,16 @@ export interface LancheCombo {
     descricao?: string; 
     valorUnitario: number; 
     quantidade: number;
+    estoque: number;    
     subTotal: number; 
 }
 
-// [MUDANÇA] Pedido atualizado para usar os novos nomes e incluir qtInteira/qtMeia.
 export interface Pedido {
     id: string;
-    qtInteira: number; // Adicionado conforme sua proposta
-    qtMeia: number;    // Adicionado conforme sua proposta
+    qtInteira: number; 
+    qtMeia: number;    
     itensIngresso: Ingresso[];
     itensLanche: LancheCombo[];
     valorTotal: number;
-    dataPedido: string; // Mantido para registro
+    dataPedido: string; 
 }

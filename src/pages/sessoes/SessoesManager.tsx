@@ -37,7 +37,7 @@ const SessoesManager = () => {
     const [ingressosCarrinho, setIngressosCarrinho] = useState<Ingresso[]>([]);
     const [lanchesCarrinho, setLanchesCarrinho] = useState<LancheCombo[]>([]);
     
-    // Configuração de Preços da Sessão (Definido pelo gerente na hora da venda)
+    // Configuração de Preços da Sessão
     const [configPrecoInteira, setConfigPrecoInteira] = useState<number>(20.00);
     const [configPrecoMeia, setConfigPrecoMeia] = useState<number>(10.00);
 
@@ -45,7 +45,7 @@ const SessoesManager = () => {
     const [selectedLancheId, setSelectedLancheId] = useState("");
     const [qtdeLanche, setQtdeLanche] = useState(1);
 
-    const { register, handleSubmit, formState: { errors } } = useForm<SessaoSchema>({
+    const { register, handleSubmit, setError, formState: { errors } } = useForm<SessaoSchema>({
         resolver: zodResolver(sessaoSchema)
     });
 
@@ -78,6 +78,26 @@ const SessoesManager = () => {
     };
 
     const onSubmit = async (data: SessaoSchema) => {
+        // [NOVO] Validação de Data da Sessão vs Data do Filme
+        const filmeSelecionado = filmes.find(f => String(f.id) === String(data.filmeId));
+        
+        if (filmeSelecionado) {
+            const dataSessao = new Date(data.dataHora);
+            const inicioFilme = new Date(filmeSelecionado.dataInicioExibicao);
+            const fimFilme = new Date(filmeSelecionado.dataFinalExibicao);
+            
+            // Adicionamos o final do dia na data final para cobrir exibições até o último minuto
+            fimFilme.setHours(23, 59, 59);
+
+            if (dataSessao < inicioFilme || dataSessao > fimFilme) {
+                setError("dataHora", { 
+                    type: "manual", 
+                    message: `A sessão deve ocorrer entre ${new Date(inicioFilme).toLocaleDateString()} e ${new Date(fimFilme).toLocaleDateString()}` 
+                });
+                return;
+            }
+        }
+
         await api.post('/sessoes', data);
         alert("Sessão agendada!");
         loadData();
@@ -111,7 +131,6 @@ const SessoesManager = () => {
         if (jaNoCarrinho) {
             setIngressosCarrinho(prev => prev.filter(i => !(i.poltrona.fila === fila && i.poltrona.numero === numero)));
         } else {
-            // Usa o valor configurado nos inputs de preço
             const novoIngresso: Ingresso = {
                 sessaoId: sessaoSelecionada.id,
                 tipo: 'INTEIRA',
@@ -122,7 +141,6 @@ const SessoesManager = () => {
         }
     };
 
-    // Função corrigida para lidar com a mudança de tipo (Inteira/Meia)
     const handleTipoChange = (index: number, novoTipo: 'INTEIRA' | 'MEIA') => {
          const novoValor = novoTipo === 'INTEIRA' ? configPrecoInteira : configPrecoMeia;
          setIngressosCarrinho(prev => prev.map((old, ix) => ix === index ? { ...old, tipo: novoTipo, valorUnitario: novoValor } : old));
@@ -140,17 +158,43 @@ const SessoesManager = () => {
             return;
         }
 
-        const lancheOriginal = lanchesDisponiveis.find(l => l.id === selectedLancheId);
-        if(!lancheOriginal) return;
-
-        const lancheParaCarrinho: LancheCombo = {
-            ...lancheOriginal,
-            quantidade: qtdeLanche,
-            subTotal: lancheOriginal.valorUnitario * qtdeLanche
-        };
-
-        setLanchesCarrinho(prev => [...prev, lancheParaCarrinho]);
+        // [CORREÇÃO] Conversão para String para garantir match de ID (number vs string)
+        const lancheOriginal = lanchesDisponiveis.find(l => String(l.id) === String(selectedLancheId));
         
+        if(!lancheOriginal) {
+            alert("Lanche não encontrado.");
+            return;
+        }
+
+        // [NOVO] Verificação de Estoque
+        // Verifica quanto já tem no carrinho deste mesmo item
+        const jaNoCarrinho = lanchesCarrinho
+            .filter(l => String(l.id) === String(lancheOriginal.id))
+            .reduce((acc, curr) => acc + curr.quantidade, 0);
+
+        if ((jaNoCarrinho + qtdeLanche) > lancheOriginal.estoque) {
+            alert(`Estoque insuficiente! Disponível: ${lancheOriginal.estoque}. No carrinho: ${jaNoCarrinho}. Tentando adicionar: ${qtdeLanche}.`);
+            return;
+        }
+
+        // Se já existe no carrinho, apenas atualiza a quantidade
+        const itemExistenteIndex = lanchesCarrinho.findIndex(l => String(l.id) === String(lancheOriginal.id));
+
+        if (itemExistenteIndex >= 0) {
+            const novoCarrinho = [...lanchesCarrinho];
+            novoCarrinho[itemExistenteIndex].quantidade += qtdeLanche;
+            novoCarrinho[itemExistenteIndex].subTotal = novoCarrinho[itemExistenteIndex].quantidade * novoCarrinho[itemExistenteIndex].valorUnitario;
+            setLanchesCarrinho(novoCarrinho);
+        } else {
+            const lancheParaCarrinho: LancheCombo = {
+                ...lancheOriginal,
+                quantidade: qtdeLanche,
+                subTotal: lancheOriginal.valorUnitario * qtdeLanche
+            };
+            setLanchesCarrinho(prev => [...prev, lancheParaCarrinho]);
+        }
+        
+        // Reset inputs
         setSelectedLancheId("");
         setQtdeLanche(1);
     };
@@ -181,7 +225,10 @@ const SessoesManager = () => {
         };
 
         try {
+            // OBS: Aqui seria o ideal fazer um PATCH para atualizar o estoque no backend
+            // Mas o json-server padrão não suporta transações complexas nativamente
             await api.post('/pedidos', pedido);
+            
             alert("Venda realizada com sucesso!");
             setSessaoSelecionada(null);
             setIngressosCarrinho([]);
@@ -253,7 +300,6 @@ const SessoesManager = () => {
                                         setSessaoSelecionada(s);
                                         setIngressosCarrinho([]);
                                         setLanchesCarrinho([]);
-                                        // Reseta preços para o padrão ao abrir modal
                                         setConfigPrecoInteira(20);
                                         setConfigPrecoMeia(10);
                                     }}>
@@ -373,8 +419,8 @@ const SessoesManager = () => {
                                             >
                                                 <option value="">Selecione um item...</option>
                                                 {lanchesDisponiveis.map(l => (
-                                                    <option key={l.id} value={l.id}>
-                                                        {l.nome} - R$ {l.valorUnitario.toFixed(2)}
+                                                    <option key={l.id} value={l.id} disabled={l.estoque <= 0}>
+                                                        {l.nome} - R$ {l.valorUnitario.toFixed(2)} {l.estoque <= 0 ? '(Esgotado)' : `(Disp: ${l.estoque})`}
                                                     </option>
                                                 ))}
                                             </select>
