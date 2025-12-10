@@ -3,7 +3,14 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import api from '../../services/api';
-import { type Filme, type Sala, type Sessao, type Pedido, type ItemIngresso, type ItemLanche } from '../../types';
+import { 
+    type Filme, 
+    type Sala, 
+    type Sessao, 
+    type Pedido, 
+    type Ingresso, 
+    type LancheCombo 
+} from '../../types';
 
 const sessaoSchema = z.object({
     filmeId: z.string().min(1, "Selecione um filme"),
@@ -24,8 +31,8 @@ const SessoesManager = () => {
 
     // Carrinho / Pedido Atual
     const [sessaoSelecionada, setSessaoSelecionada] = useState<Sessao | null>(null);
-    const [ingressosCarrinho, setIngressosCarrinho] = useState<ItemIngresso[]>([]);
-    const [lanchesCarrinho, setLanchesCarrinho] = useState<ItemLanche[]>([]);
+    const [ingressosCarrinho, setIngressosCarrinho] = useState<Ingresso[]>([]);
+    const [lanchesCarrinho, setLanchesCarrinho] = useState<LancheCombo[]>([]);
     
     // Inputs temporários para adicionar Lanche Avulso
     const [novoLancheNome, setNovoLancheNome] = useState("");
@@ -86,7 +93,6 @@ const SessoesManager = () => {
     const calcularCapacidadeRestante = (sessao: Sessao) => {
         if (!sessao.sala) return 0;
         const totalOcupado = getAssentosOcupados(sessao.id).length;
-        // Correto
         return sessao.sala.capacidade - totalOcupado;
     };
 
@@ -101,9 +107,9 @@ const SessoesManager = () => {
             setIngressosCarrinho(prev => prev.filter(i => !(i.poltrona.fila === fila && i.poltrona.numero === numero)));
         } else {
             // Adiciona ao carrinho (Default INTEIRA, pode mudar depois)
-            const novoIngresso: ItemIngresso = {
+            const novoIngresso: Ingresso = {
                 sessaoId: sessaoSelecionada.id,
-                tipo: 'INTEIRA' as const,
+                tipo: 'INTEIRA',
                 poltrona: { fila, numero },
                 valorUnitario: 20.00
             };
@@ -119,9 +125,16 @@ const SessoesManager = () => {
             return;
         }
 
+        const quantidade = 1;
+        // Agora calcula subTotal e usa o tipo LancheCombo
         setLanchesCarrinho(prev => [
             ...prev, 
-            { nome: novoLancheNome, valorUnitario: novoLanchePreco, quantidade: 1 }
+            { 
+                nome: novoLancheNome, 
+                valorUnitario: novoLanchePreco, 
+                quantidade: quantidade,
+                subTotal: novoLanchePreco * quantidade
+            }
         ]);
         setNovoLancheNome("");
         setNovoLanchePreco(0);
@@ -134,14 +147,21 @@ const SessoesManager = () => {
 
     // --- Finalização ---
 
+    // Calculamos o total visualmente para exibir no modal
     const totalIngressosValor = ingressosCarrinho.reduce((acc, i) => acc + i.valorUnitario, 0);
-    const totalLanchesValor = lanchesCarrinho.reduce((acc, l) => acc + (l.valorUnitario * l.quantidade), 0);
+    const totalLanchesValor = lanchesCarrinho.reduce((acc, l) => acc + l.subTotal, 0);
     const totalGeral = totalIngressosValor + totalLanchesValor;
 
     const finalizarVenda = async () => {
         if (ingressosCarrinho.length === 0 && lanchesCarrinho.length === 0) return;
 
+        // Calcula quantidades para salvar conforme UML
+        const qtInteira = ingressosCarrinho.filter(i => i.tipo === 'INTEIRA').length;
+        const qtMeia = ingressosCarrinho.filter(i => i.tipo === 'MEIA').length;
+
         const pedido: Omit<Pedido, 'id'> = {
+            qtInteira,
+            qtMeia,
             itensIngresso: ingressosCarrinho,
             itensLanche: lanchesCarrinho,
             valorTotal: totalGeral,
@@ -150,7 +170,7 @@ const SessoesManager = () => {
 
         try {
             await api.post('/pedidos', pedido);
-            alert("Venda realizada!");
+            alert("Venda realizada com sucesso!");
             setSessaoSelecionada(null);
             setIngressosCarrinho([]);
             setLanchesCarrinho([]);
@@ -315,7 +335,7 @@ const SessoesManager = () => {
                                                 <li key={idx} className="list-group-item d-flex justify-content-between">
                                                     <span>{lanche.nome}</span>
                                                     <span>
-                                                        R$ {lanche.valorUnitario.toFixed(2)}
+                                                        R$ {lanche.subTotal.toFixed(2)}
                                                         <button className="btn btn-sm text-danger ms-2" onClick={() => removerLancheDoCarrinho(idx)}><i className="bi bi-x-circle"></i></button>
                                                     </span>
                                                 </li>

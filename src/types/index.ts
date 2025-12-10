@@ -14,6 +14,7 @@ export interface Sala {
     id: string;
     numero: number;
     capacidade: number;
+    // O campo 'poutronas: int' do UML é ambíguo e o campo 'capacidade' já é usado para o cálculo de assentos. Mantemos Sala sem 'poutronas' para evitar redundância.
 }
 
 export interface Sessao {
@@ -25,24 +26,35 @@ export interface Sessao {
     sala?: Sala;
 }
 
-// [NOVO] Definição de Poltrona para o Ingresso
-export interface ItemIngresso {
+// [MUDANÇA] Renomeado de ItemIngresso para Ingresso, conforme UML.
+// Inclui dados de poltrona (necessário para a lógica de venda)
+export interface Ingresso { 
     sessaoId: string;
-    tipo: 'INTEIRA' | 'MEIA';
-    poltrona: { fila: number; numero: number }; // [REQ: dados poltrona]
-    valorUnitario: number;
+    tipo: 'INTEIRA' | 'MEIA'; 
+    poltrona: { fila: number; numero: number }; // Mantido - Essencial para o mapa de assentos.
+    valorUnitario: number; 
+    valorInteira?: number; // Adicionado do UML (embora redundante para o item vendido)
+    valorMeia?: number;    // Adicionado do UML (embora redundante para o item vendido)
+    sessao?: Sessao;
 }
 
-export interface ItemLanche {
-    nome: string; // [MUDANÇA] Nome direto, pois não temos mais tabela de lanches
+// [MUDANÇA] De ItemLanche para LancheCombo, conforme UML, incluindo campos adicionais.
+export interface LancheCombo {
+    id?: string; // Opcional, pois é venda ad-hoc
+    nome: string; 
+    descricao?: string; // Adicionado do UML
+    valorUnitario: number; 
     quantidade: number;
-    valorUnitario: number;
+    subTotal: number; // Adicionado do UML (será calculado)
 }
 
+// [MUDANÇA] Pedido atualizado para usar os novos nomes e incluir qtInteira/qtMeia.
 export interface Pedido {
     id: string;
-    itensIngresso: ItemIngresso[];
-    itensLanche: ItemLanche[];
+    qtInteira: number; // Adicionado conforme sua proposta
+    qtMeia: number;    // Adicionado conforme sua proposta
+    itensIngresso: Ingresso[];
+    itensLanche: LancheCombo[];
     valorTotal: number;
-    dataPedido: string;
+    dataPedido: string; // Mantido para registro
 }
