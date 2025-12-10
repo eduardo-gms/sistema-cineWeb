@@ -225,17 +225,37 @@ const SessoesManager = () => {
         };
 
         try {
-            // OBS: Aqui seria o ideal fazer um PATCH para atualizar o estoque no backend
-            // Mas o json-server padrão não suporta transações complexas nativamente
+            // 1. Salva o pedido no histórico
             await api.post('/pedidos', pedido);
+
+            // 2. ATUALIZAÇÃO DE ESTOQUE [NOVO]
+            // Percorre os lanches do carrinho e atualiza o estoque de cada um
+            const atualizacoesEstoque = lanchesCarrinho.map(item => {
+                if (item.id) {
+                    // O 'item.estoque' aqui é o valor que tinha quando carregamos a página.
+                    // Subtraímos a quantidade que está sendo comprada agora.
+                    const novoEstoque = item.estoque - item.quantidade;
+                    
+                    // Envia o PATCH para atualizar apenas o campo 'estoque' deste item
+                    return api.patch(`/lancheCombos/${item.id}`, { estoque: novoEstoque });
+                }
+                return Promise.resolve();
+            });
+
+            // Aguarda todas as atualizações de estoque terminarem
+            await Promise.all(atualizacoesEstoque);
             
             alert("Venda realizada com sucesso!");
             setSessaoSelecionada(null);
             setIngressosCarrinho([]);
             setLanchesCarrinho([]);
-            loadData();
-        } catch {
-            alert("Erro ao salvar pedido");
+            
+            // Recarrega os dados para pegar o estoque atualizado do servidor
+            loadData(); 
+
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao processar a venda.");
         }
     };
 
