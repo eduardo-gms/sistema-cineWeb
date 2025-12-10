@@ -5,6 +5,7 @@ import FilmesForm from './pages/filmes/FilmesForm';
 import SalasLista from './pages/salas/SalasLista';
 import SalasForm from './pages/salas/SalasForm';
 import SessoesManager from './pages/sessoes/SessoesManager';
+import LancheCombosManager from './pages/lanches/LancheComboManager'; // Import novo
 
 function App() {
   return (
@@ -23,6 +24,9 @@ function App() {
             <Route path="/salas" element={<SalasLista />} />
             <Route path="/salas/novo" element={<SalasForm />} />
             <Route path="/sessoes" element={<SessoesManager />} />
+            
+            {/* ROTA DE LANCHES */}
+            <Route path="/lanches" element={<LancheCombosManager />} />
         </Routes>
       </div>
     </BrowserRouter>

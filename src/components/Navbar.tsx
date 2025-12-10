@@ -10,6 +10,8 @@ const Navbar = () => {
             <li className="nav-item"><Link className="nav-link" to="/filmes">Filmes</Link></li>
             <li className="nav-item"><Link className="nav-link" to="/salas">Salas</Link></li>
             <li className="nav-item"><Link className="nav-link" to="/sessoes">Sessões</Link></li>
+            {/* LINK NOVO */}
+            <li className="nav-item"><Link className="nav-link" to="/lanches">Lanches & Combos</Link></li>
           </ul>
         </div>
       </div>
