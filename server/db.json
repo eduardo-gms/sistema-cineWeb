@@ -1,0 +1,81 @@
+{
+  "filmes": [
+    {
+      "titulo": "dscvdscvsd",
+      "sinopse": "sdcsdcsdcsdcsdc",
+      "duracao": 93,
+      "classificacao": "16",
+      "genero": "Ação",
+      "elenco": "sdcsdc",
+      "dataInicioExibicao": "2025-12-18",
+      "dataFinalExibicao": "2025-12-31",
+      "id": 1
+    }
+  ],
+  "salas": [
+    {
+      "numero": 1,
+      "capacidade": 120,
+      "id": 1
+    }
+  ],
+  "sessoes": [
+    {
+      "filmeId": "1",
+      "salaId": "1",
+      "dataHora": "2025-12-25T15:09",
+      "id": 1
+    }
+  ],
+  "pedidos": [
+    {
+      "qtInteira": 2,
+      "qtMeia": 0,
+      "itensIngresso": [
+        {
+          "sessaoId": 1,
+          "tipo": "INTEIRA",
+          "poltrona": {
+            "fila": 2,
+            "numero": 4
+          },
+          "valorUnitario": 20
+        },
+        {
+          "sessaoId": 1,
+          "tipo": "INTEIRA",
+          "poltrona": {
+            "fila": 2,
+            "numero": 5
+          },
+          "valorUnitario": 20
+        }
+      ],
+      "itensLanche": [
+        {
+          "nome": "dcdcdscds",
+          "descricao": "sdcdscdsc",
+          "valorUnitario": 25,
+          "estoque": 50,
+          "quantidade": 5,
+          "subTotal": 125,
+          "id": 1
+        }
+      ],
+      "valorTotal": 165,
+      "dataPedido": "2025-12-10T18:10:51.505Z",
+      "id": 1
+    }
+  ],
+  "lancheCombos": [
+    {
+      "nome": "dcdcdscds",
+      "descricao": "sdcdscdsc",
+      "valorUnitario": 25,
+      "estoque": 45,
+      "quantidade": 0,
+      "subTotal": 0,
+      "id": 1
+    }
+  ]
+}
