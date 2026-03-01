@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api from '../../services/api';
+import { getFilmes, deleteFilme } from '../../services/api';
 import type { Filme } from '../../types';
 import { Link } from 'react-router-dom';
 
@@ -7,16 +7,16 @@ const FilmesLista = () => {
   const [filmes, setFilmes] = useState<Filme[]>([]);
 
   const carregarFilmes = async () => {
-    const response = await api.get('/filmes');
+    const response = await getFilmes();
     setFilmes(response.data);
   };
 
   useEffect(() => { carregarFilmes(); }, []);
 
   const deletarFilme = async (id: string) => {
-    if(confirm("Tem certeza?")) {
-        await api.delete(`/filmes/${id}`);
-        carregarFilmes();
+    if (confirm("Tem certeza?")) {
+      await deleteFilme(id);
+      carregarFilmes();
     }
   };
 
@@ -34,14 +34,14 @@ const FilmesLista = () => {
                 <h5 className="card-title">{filme.titulo}</h5>
                 <h6 className="card-subtitle mb-2 text-muted">{filme.genero} | {filme.duracao} min</h6>
                 <p className="card-text small">
-                    <strong>Elenco:</strong> {filme.elenco}
+                  <strong>Elenco:</strong> {filme.elenco}
                 </p>
                 <p className="card-text">{filme.sinopse}</p>
                 <p className="card-text"><small className="text-muted">
-                    Exibição: {new Date(filme.dataInicioExibicao).toLocaleDateString()} até {new Date(filme.dataFinalExibicao).toLocaleDateString()}
+                  Exibição: {new Date(filme.dataInicioExibicao).toLocaleDateString()} até {new Date(filme.dataFinalExibicao).toLocaleDateString()}
                 </small></p>
                 <button onClick={() => deletarFilme(filme.id)} className="btn btn-danger btn-sm">
-                    <i className="bi bi-trash"></i> Excluir
+                  <i className="bi bi-trash"></i> Excluir
                 </button>
               </div>
             </div>

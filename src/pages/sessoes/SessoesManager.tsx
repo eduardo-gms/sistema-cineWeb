@@ -2,14 +2,24 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import api from '../../services/api';
-import { 
-    type Filme, 
-    type Sala, 
-    type Sessao, 
-    type Pedido, 
-    type Ingresso, 
-    type LancheCombo 
+import {
+    getFilmes,
+    getSalas,
+    getSessoes,
+    getPedidos,
+    getLanches,
+    createSessao,
+    deleteSessao,
+    createPedido,
+    updateLancheEstoque
+} from '../../services/api';
+import {
+    type Filme,
+    type Sala,
+    type Sessao,
+    type Pedido,
+    type Ingresso,
+    type LancheCombo
 } from '../../types';
 
 const sessaoSchema = z.object({
@@ -28,7 +38,7 @@ const SessoesManager = () => {
     const [salas, setSalas] = useState<Sala[]>([]);
     const [sessoes, setSessoes] = useState<Sessao[]>([]);
     const [pedidosRealizados, setPedidosRealizados] = useState<Pedido[]>([]);
-    
+
     // Estado para armazenar os lanches disponíveis no banco de dados
     const [lanchesDisponiveis, setLanchesDisponiveis] = useState<LancheCombo[]>([]);
 
@@ -36,7 +46,7 @@ const SessoesManager = () => {
     const [sessaoSelecionada, setSessaoSelecionada] = useState<Sessao | null>(null);
     const [ingressosCarrinho, setIngressosCarrinho] = useState<Ingresso[]>([]);
     const [lanchesCarrinho, setLanchesCarrinho] = useState<LancheCombo[]>([]);
-    
+
     // Configuração de Preços da Sessão
     const [configPrecoInteira, setConfigPrecoInteira] = useState<number>(20.00);
     const [configPrecoMeia, setConfigPrecoMeia] = useState<number>(10.00);
@@ -52,11 +62,11 @@ const SessoesManager = () => {
     const loadData = async () => {
         try {
             const [f, s, sess, ped, lanchesResp] = await Promise.all([
-                api.get('/filmes'),
-                api.get('/salas'),
-                api.get('/sessoes?_expand=filme&_expand=sala'),
-                api.get('/pedidos'),
-                api.get('/lancheCombos')
+                getFilmes(),
+                getSalas(),
+                getSessoes(),
+                getPedidos(),
+                getLanches()
             ]);
             setFilmes(f.data);
             setSalas(s.data);
@@ -71,8 +81,8 @@ const SessoesManager = () => {
     useEffect(() => { loadData(); }, []);
 
     const removerSessao = async (id: string) => {
-        if(confirm("Deseja cancelar esta sessão?")) {
-            await api.delete(`/sessoes/${id}`);
+        if (confirm("Deseja cancelar esta sessão?")) {
+            await deleteSessao(id);
             loadData();
         }
     };
@@ -80,25 +90,25 @@ const SessoesManager = () => {
     const onSubmit = async (data: SessaoSchema) => {
         // [NOVO] Validação de Data da Sessão vs Data do Filme
         const filmeSelecionado = filmes.find(f => String(f.id) === String(data.filmeId));
-        
+
         if (filmeSelecionado) {
             const dataSessao = new Date(data.dataHora);
             const inicioFilme = new Date(filmeSelecionado.dataInicioExibicao);
             const fimFilme = new Date(filmeSelecionado.dataFinalExibicao);
-            
+
             // Adicionamos o final do dia na data final para cobrir exibições até o último minuto
             fimFilme.setHours(23, 59, 59);
 
             if (dataSessao < inicioFilme || dataSessao > fimFilme) {
-                setError("dataHora", { 
-                    type: "manual", 
-                    message: `A sessão deve ocorrer entre ${new Date(inicioFilme).toLocaleDateString()} e ${new Date(fimFilme).toLocaleDateString()}` 
+                setError("dataHora", {
+                    type: "manual",
+                    message: `A sessão deve ocorrer entre ${new Date(inicioFilme).toLocaleDateString()} e ${new Date(fimFilme).toLocaleDateString()}`
                 });
                 return;
             }
         }
 
-        await api.post('/sessoes', data);
+        await createSessao(data);
         alert("Sessão agendada!");
         loadData();
     };
@@ -127,7 +137,7 @@ const SessoesManager = () => {
         if (!sessaoSelecionada) return;
 
         const jaNoCarrinho = ingressosCarrinho.find(i => i.poltrona.fila === fila && i.poltrona.numero === numero);
-        
+
         if (jaNoCarrinho) {
             setIngressosCarrinho(prev => prev.filter(i => !(i.poltrona.fila === fila && i.poltrona.numero === numero)));
         } else {
@@ -142,26 +152,26 @@ const SessoesManager = () => {
     };
 
     const handleTipoChange = (index: number, novoTipo: 'INTEIRA' | 'MEIA') => {
-         const novoValor = novoTipo === 'INTEIRA' ? configPrecoInteira : configPrecoMeia;
-         setIngressosCarrinho(prev => prev.map((old, ix) => ix === index ? { ...old, tipo: novoTipo, valorUnitario: novoValor } : old));
+        const novoValor = novoTipo === 'INTEIRA' ? configPrecoInteira : configPrecoMeia;
+        setIngressosCarrinho(prev => prev.map((old, ix) => ix === index ? { ...old, tipo: novoTipo, valorUnitario: novoValor } : old));
     }
 
     // --- Lógica de Lanches ---
-    
+
     const adicionarLancheSelecionado = () => {
-        if(!selectedLancheId) {
+        if (!selectedLancheId) {
             alert("Selecione um lanche da lista.");
             return;
         }
-        if(qtdeLanche <= 0) {
+        if (qtdeLanche <= 0) {
             alert("A quantidade deve ser maior que 0.");
             return;
         }
 
         // [CORREÇÃO] Conversão para String para garantir match de ID (number vs string)
         const lancheOriginal = lanchesDisponiveis.find(l => String(l.id) === String(selectedLancheId));
-        
-        if(!lancheOriginal) {
+
+        if (!lancheOriginal) {
             alert("Lanche não encontrado.");
             return;
         }
@@ -193,7 +203,7 @@ const SessoesManager = () => {
             };
             setLanchesCarrinho(prev => [...prev, lancheParaCarrinho]);
         }
-        
+
         // Reset inputs
         setSelectedLancheId("");
         setQtdeLanche(1);
@@ -226,7 +236,7 @@ const SessoesManager = () => {
 
         try {
             // 1. Salva o pedido no histórico
-            await api.post('/pedidos', pedido);
+            await createPedido(pedido);
 
             // 2. ATUALIZAÇÃO DE ESTOQUE [NOVO]
             // Percorre os lanches do carrinho e atualiza o estoque de cada um
@@ -235,23 +245,23 @@ const SessoesManager = () => {
                     // O 'item.estoque' aqui é o valor que tinha quando carregamos a página.
                     // Subtraímos a quantidade que está sendo comprada agora.
                     const novoEstoque = item.estoque - item.quantidade;
-                    
+
                     // Envia o PATCH para atualizar apenas o campo 'estoque' deste item
-                    return api.patch(`/lancheCombos/${item.id}`, { estoque: novoEstoque });
+                    return updateLancheEstoque(item.id, novoEstoque);
                 }
                 return Promise.resolve();
             });
 
             // Aguarda todas as atualizações de estoque terminarem
             await Promise.all(atualizacoesEstoque);
-            
+
             alert("Venda realizada com sucesso!");
             setSessaoSelecionada(null);
             setIngressosCarrinho([]);
             setLanchesCarrinho([]);
-            
+
             // Recarrega os dados para pegar o estoque atualizado do servidor
-            loadData(); 
+            loadData();
 
         } catch (error) {
             console.error(error);
@@ -309,7 +319,7 @@ const SessoesManager = () => {
                             <tr key={s.id}>
                                 <td>{s.filme?.titulo}</td>
                                 <td>
-                                    Sala {s.sala?.numero} <br/>
+                                    Sala {s.sala?.numero} <br />
                                     <small className={calcularCapacidadeRestante(s) === 0 ? "text-danger" : "text-success"}>
                                         {calcularCapacidadeRestante(s)} lugares livres
                                     </small>
@@ -351,7 +361,7 @@ const SessoesManager = () => {
                                         <h6 className="text-center">Selecione as Poltronas</h6>
                                         <div className="d-flex flex-wrap justify-content-center gap-2 mt-3" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                                             {sessaoSelecionada.sala && Array.from({ length: sessaoSelecionada.sala.capacidade }).map((_, i) => {
-                                                const fila = Math.floor(i / 10) + 1; 
+                                                const fila = Math.floor(i / 10) + 1;
                                                 const numero = (i % 10) + 1;
                                                 const ocupado = getAssentosOcupados(sessaoSelecionada.id).includes(`${fila}-${numero}`);
                                                 const selecionado = ingressosCarrinho.some(item => item.poltrona.fila === fila && item.poltrona.numero === numero);
@@ -377,7 +387,7 @@ const SessoesManager = () => {
 
                                     {/* 2. Detalhes do Pedido */}
                                     <div className="col-md-7">
-                                        
+
                                         {/* Configuração de Preços */}
                                         <div className="card mb-3 p-2 bg-light border-0">
                                             <div className="row g-2 align-items-center">
@@ -385,8 +395,8 @@ const SessoesManager = () => {
                                                 <div className="col">
                                                     <div className="input-group input-group-sm">
                                                         <span className="input-group-text">Inteira R$</span>
-                                                        <input 
-                                                            type="number" className="form-control" 
+                                                        <input
+                                                            type="number" className="form-control"
                                                             value={configPrecoInteira}
                                                             onChange={e => setConfigPrecoInteira(Number(e.target.value))}
                                                         />
@@ -395,8 +405,8 @@ const SessoesManager = () => {
                                                 <div className="col">
                                                     <div className="input-group input-group-sm">
                                                         <span className="input-group-text">Meia R$</span>
-                                                        <input 
-                                                            type="number" className="form-control" 
+                                                        <input
+                                                            type="number" className="form-control"
                                                             value={configPrecoMeia}
                                                             onChange={e => setConfigPrecoMeia(Number(e.target.value))}
                                                         />
@@ -406,12 +416,12 @@ const SessoesManager = () => {
                                         </div>
 
                                         <h6 className="border-bottom pb-2">Ingressos Selecionados</h6>
-                                        <ul className="list-group mb-3 small" style={{maxHeight: '150px', overflowY: 'auto'}}>
+                                        <ul className="list-group mb-3 small" style={{ maxHeight: '150px', overflowY: 'auto' }}>
                                             {ingressosCarrinho.map((item, idx) => (
                                                 <li key={idx} className="list-group-item d-flex justify-content-between align-items-center">
                                                     <span>Fila {item.poltrona.fila} - Assento {item.poltrona.numero}</span>
                                                     <div>
-                                                        <select 
+                                                        <select
                                                             className="form-select form-select-sm d-inline-block w-auto me-2"
                                                             value={item.tipo}
                                                             onChange={(e) => handleTipoChange(idx, e.target.value as 'INTEIRA' | 'MEIA')}
@@ -432,8 +442,8 @@ const SessoesManager = () => {
                                         <h6 className="border-bottom pb-2 mt-4">Adicionar Lanches / Combos</h6>
                                         <div className="input-group mb-3">
                                             {/* Select de Lanches */}
-                                            <select 
-                                                className="form-select" 
+                                            <select
+                                                className="form-select"
                                                 value={selectedLancheId}
                                                 onChange={e => setSelectedLancheId(e.target.value)}
                                             >
@@ -444,18 +454,18 @@ const SessoesManager = () => {
                                                     </option>
                                                 ))}
                                             </select>
-                                            
+
                                             {/* Input de Quantidade */}
-                                            <input 
-                                                type="number" 
-                                                className="form-control" 
-                                                placeholder="Qtd" 
-                                                style={{maxWidth: '80px'}}
-                                                value={qtdeLanche} 
+                                            <input
+                                                type="number"
+                                                className="form-control"
+                                                placeholder="Qtd"
+                                                style={{ maxWidth: '80px' }}
+                                                value={qtdeLanche}
                                                 min={1}
-                                                onChange={e => setQtdeLanche(Number(e.target.value))} 
+                                                onChange={e => setQtdeLanche(Number(e.target.value))}
                                             />
-                                            
+
                                             <button className="btn btn-warning" onClick={adicionarLancheSelecionado}>
                                                 <i className="bi bi-plus-lg"></i>
                                             </button>

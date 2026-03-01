@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import api from '../../services/api';
+import { createFilme } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 
 // Schema atualizado conforme Diagrama de Classes
@@ -15,8 +15,8 @@ const filmeSchema = z.object({
   dataInicioExibicao: z.string().min(1, "Data inicial obrigatória"), // [NOVO]
   dataFinalExibicao: z.string().min(1, "Data final obrigatória"),    // [NOVO]
 }).refine(data => new Date(data.dataFinalExibicao) >= new Date(data.dataInicioExibicao), {
-    message: "Data final deve ser posterior à data inicial",
-    path: ["dataFinalExibicao"]
+  message: "Data final deve ser posterior à data inicial",
+  path: ["dataFinalExibicao"]
 });
 
 type FilmeSchema = z.infer<typeof filmeSchema>;
@@ -29,11 +29,11 @@ const FilmesForm = () => {
 
   const onSubmit = async (data: FilmeSchema) => {
     try {
-        await api.post('/filmes', data);
-        alert('Filme cadastrado com sucesso!');
-        navigate('/filmes');
+      await createFilme(data);
+      alert('Filme cadastrado com sucesso!');
+      navigate('/filmes');
     } catch {
-        alert("Erro ao cadastrar.");
+      alert("Erro ao cadastrar.");
     }
   };
 
@@ -49,13 +49,13 @@ const FilmesForm = () => {
 
         {/* Novo Campo: Elenco */}
         <div className="mb-3">
-            <label className="form-label">Elenco</label>
-            <input 
-                {...register('elenco')} 
-                className={`form-control ${errors.elenco ? 'is-invalid' : ''}`} 
-                placeholder="Ex: Wagner Moura, Selton Mello"
-            />
-            <div className="invalid-feedback">{errors.elenco?.message}</div>
+          <label className="form-label">Elenco</label>
+          <input
+            {...register('elenco')}
+            className={`form-control ${errors.elenco ? 'is-invalid' : ''}`}
+            placeholder="Ex: Wagner Moura, Selton Mello"
+          />
+          <div className="invalid-feedback">{errors.elenco?.message}</div>
         </div>
 
         <div className="mb-3">
@@ -65,50 +65,50 @@ const FilmesForm = () => {
         </div>
 
         <div className="row mb-3">
-            <div className="col-md-4">
-                <label className="form-label">Duração (min)</label>
-                <input type="number" {...register('duracao', { valueAsNumber: true })} className={`form-control ${errors.duracao ? 'is-invalid' : ''}`} />
-                <div className="invalid-feedback">{errors.duracao?.message}</div>
-            </div>
-            <div className="col-md-4">
-                <label className="form-label">Classificação</label>
-                <select {...register('classificacao')} className="form-select">
-                    <option value="">Selecione...</option>
-                    <option value="Livre">Livre</option>
-                    <option value="10">10 anos</option>
-                    <option value="12">12 anos</option>
-                    <option value="14">14 anos</option>
-                    <option value="16">16 anos</option>
-                    <option value="18">18 anos</option>
-                </select>
-            </div>
-            <div className="col-md-4">
-                <label className="form-label">Gênero</label>
-                <select {...register('genero')} className="form-select">
-                    <option value="">Selecione...</option>
-                    <option value="Ação">Ação</option>
-                    <option value="Comédia">Comédia</option>
-                    <option value="Drama">Drama</option>
-                    <option value="Terror">Terror</option>
-                    <option value="Ficção">Ficção</option>
-                </select>
-            </div>
+          <div className="col-md-4">
+            <label className="form-label">Duração (min)</label>
+            <input type="number" {...register('duracao', { valueAsNumber: true })} className={`form-control ${errors.duracao ? 'is-invalid' : ''}`} />
+            <div className="invalid-feedback">{errors.duracao?.message}</div>
+          </div>
+          <div className="col-md-4">
+            <label className="form-label">Classificação</label>
+            <select {...register('classificacao')} className="form-select">
+              <option value="">Selecione...</option>
+              <option value="Livre">Livre</option>
+              <option value="10">10 anos</option>
+              <option value="12">12 anos</option>
+              <option value="14">14 anos</option>
+              <option value="16">16 anos</option>
+              <option value="18">18 anos</option>
+            </select>
+          </div>
+          <div className="col-md-4">
+            <label className="form-label">Gênero</label>
+            <select {...register('genero')} className="form-select">
+              <option value="">Selecione...</option>
+              <option value="Ação">Ação</option>
+              <option value="Comédia">Comédia</option>
+              <option value="Drama">Drama</option>
+              <option value="Terror">Terror</option>
+              <option value="Ficção">Ficção</option>
+            </select>
+          </div>
         </div>
 
         {/* Novos Campos: Datas de Exibição */}
         <div className="row mb-3">
-            <div className="col-md-6">
-                <label className="form-label">Início Exibição</label>
-                <input type="date" {...register('dataInicioExibicao')} className={`form-control ${errors.dataInicioExibicao ? 'is-invalid' : ''}`} />
-                <div className="invalid-feedback">{errors.dataInicioExibicao?.message}</div>
-            </div>
-            <div className="col-md-6">
-                <label className="form-label">Fim Exibição</label>
-                <input type="date" {...register('dataFinalExibicao')} className={`form-control ${errors.dataFinalExibicao ? 'is-invalid' : ''}`} />
-                <div className="invalid-feedback">{errors.dataFinalExibicao?.message}</div>
-            </div>
+          <div className="col-md-6">
+            <label className="form-label">Início Exibição</label>
+            <input type="date" {...register('dataInicioExibicao')} className={`form-control ${errors.dataInicioExibicao ? 'is-invalid' : ''}`} />
+            <div className="invalid-feedback">{errors.dataInicioExibicao?.message}</div>
+          </div>
+          <div className="col-md-6">
+            <label className="form-label">Fim Exibição</label>
+            <input type="date" {...register('dataFinalExibicao')} className={`form-control ${errors.dataFinalExibicao ? 'is-invalid' : ''}`} />
+            <div className="invalid-feedback">{errors.dataFinalExibicao?.message}</div>
+          </div>
         </div>
-        
+
         <button type="submit" className="btn btn-primary w-100">Salvar Filme</button>
       </form>
     </div>
