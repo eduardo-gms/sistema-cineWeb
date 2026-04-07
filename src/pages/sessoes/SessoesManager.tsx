@@ -311,7 +311,7 @@ const SessoesManager = () => {
                         </div>
                         <div className="mb-2">
                             <label>Valor Ingresso Inteira (R$)</label>
-                            <input type="number" step="0.01" {...register('valorIngresso')} className="form-control" placeholder="20.00" />
+                            <input type="number" step="0.01" {...register('valorIngresso', { valueAsNumber: true })} className="form-control" placeholder="20.00" />
                             <div className="text-danger small">{errors.valorIngresso?.message}</div>
                         </div>
                         <div className="d-flex gap-2 mt-3">

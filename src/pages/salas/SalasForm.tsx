@@ -7,10 +7,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 // Esquema de validação com Zod
 const salaSchema = z.object({
-  numero: z.number({ invalid_type_error: "Informe o número da sala" })
+  numero: z.coerce.number({ invalid_type_error: "Informe o número da sala" })
     .positive("O número deve ser positivo")
     .int("Deve ser um número inteiro"),
-  capacidade: z.number({ invalid_type_error: "Informe a capacidade" })
+  capacidade: z.coerce.number({ invalid_type_error: "Informe a capacidade" })
     .positive("A capacidade deve ser maior que 0")
     .int("Deve ser um número inteiro"),
 });

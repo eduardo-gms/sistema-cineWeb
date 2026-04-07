@@ -10,7 +10,7 @@ import type { Genero } from '../../types'; // Certifique-se de que este tipo exi
 const filmeSchema = z.object({
   titulo: z.string().min(1, "Título é obrigatório"),
   sinopse: z.string().min(10, "Sinopse deve ter no mínimo 10 caracteres"),
-  duracao: z.number({ invalid_type_error: "Insira um número" }).positive("Duração deve ser positiva"),
+  duracao: z.coerce.number({ invalid_type_error: "Insira um número" }).int("Deve ser um número inteiro").positive("Duração deve ser positiva"),
   classificacaoEtaria: z.string().min(1, "Classificação obrigatória"), 
   generoId: z.string().min(1, "Gênero obrigatório"), 
   elenco: z.string().min(1, "Elenco é obrigatório"),

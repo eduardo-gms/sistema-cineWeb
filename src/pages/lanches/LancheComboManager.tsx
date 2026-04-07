@@ -9,9 +9,9 @@ import type { LancheCombo } from '../../types';
 const lancheComboSchema = z.object({
   nome: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
   descricao: z.string().min(5, "Descrição é obrigatória (mín. 5 caracteres)"),
-  valorUnitario: z.number({ invalid_type_error: "Informe o valor" })
+  valorUnitario: z.coerce.number({ invalid_type_error: "Informe o valor" })
     .positive("O valor deve ser positivo"),
-  estoque: z.number({ invalid_type_error: "Informe a quantidade" })
+  estoque: z.coerce.number({ invalid_type_error: "Informe a quantidade" })
     .int("Deve ser um número inteiro")
     .min(0, "Estoque não pode ser negativo") // [NOVO] Validação de estoque
 });
