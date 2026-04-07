@@ -1,23 +1,25 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createFilme, getFilmeById, updateFilme } from '../../services/api';
+import { createFilme, getFilmeById, updateFilme, getGeneros } from '../../services/api';
 import { useNavigate, useParams } from 'react-router-dom';
+import type { Genero } from '../../types'; // Certifique-se de que este tipo existe
 
-// Schema atualizado conforme Diagrama de Classes
+// Schema corrigido para espelhar EXATAMENTE o schema.prisma
 const filmeSchema = z.object({
   titulo: z.string().min(1, "Título é obrigatório"),
   sinopse: z.string().min(10, "Sinopse deve ter no mínimo 10 caracteres"),
   duracao: z.number({ invalid_type_error: "Insira um número" }).positive("Duração deve ser positiva"),
-  classificacao: z.string().min(1, "Classificação obrigatória"),
-  genero: z.string().min(1, "Gênero obrigatório"),
-  elenco: z.string().min(1, "Elenco é obrigatório"), // [NOVO]
-  dataInicioExibicao: z.string().min(1, "Data inicial obrigatória"), // [NOVO]
-  dataFinalExibicao: z.string().min(1, "Data final obrigatória"),    // [NOVO]
-}).refine(data => new Date(data.dataFinalExibicao) >= new Date(data.dataInicioExibicao), {
+  classificacaoEtaria: z.string().min(1, "Classificação obrigatória"), 
+  generoId: z.string().min(1, "Gênero obrigatório"), 
+  elenco: z.string().min(1, "Elenco é obrigatório"),
+  dataInicioExibicao: z.string().min(1, "Data inicial obrigatória"),
+  dataFimExibicao: z.string().min(1, "Data final obrigatória"),
+  status: z.string().min(1, "Status é obrigatório"), // Adicionado conforme Prisma
+}).refine(data => new Date(data.dataFimExibicao) >= new Date(data.dataInicioExibicao), {
   message: "Data final deve ser posterior à data inicial",
-  path: ["dataFinalExibicao"]
+  path: ["dataFimExibicao"]
 });
 
 type FilmeSchema = z.infer<typeof filmeSchema>;
@@ -27,17 +29,28 @@ const FilmesForm = () => {
   const { id } = useParams();
   const isEditing = !!id;
 
+  // Estado para armazenar os gêneros dinâmicos
+  const [listaGeneros, setListaGeneros] = useState<Genero[]>([]);
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FilmeSchema>({
-    resolver: zodResolver(filmeSchema)
+    resolver: zodResolver(filmeSchema),
+    defaultValues: { status: "Em Cartaz" } // Valor padrão para o banco
   });
+
+  // Busca os gêneros na API assim que o componente monta
+  useEffect(() => {
+    getGeneros()
+      .then(response => setListaGeneros(response.data))
+      .catch(error => console.error("Erro ao carregar gêneros", error));
+  }, []);
 
   useEffect(() => {
     if (isEditing) {
       getFilmeById(id).then(response => {
         const dataForm = {
           ...response.data,
-          dataInicioExibicao: response.data.dataInicioExibicao.split('T')[0],
-          dataFinalExibicao: response.data.dataFinalExibicao.split('T')[0]
+          dataInicioExibicao: new Date(response.data.dataInicioExibicao).toISOString().split('T')[0],
+          dataFimExibicao: new Date(response.data.dataFimExibicao).toISOString().split('T')[0]
         };
         reset(dataForm);
       }).catch(error => {
@@ -49,15 +62,23 @@ const FilmesForm = () => {
 
   const onSubmit = async (data: FilmeSchema) => {
     try {
+      // O backend Prisma espera datas no formato ISO-8601 completo
+      const payload = {
+        ...data,
+        dataInicioExibicao: new Date(`${data.dataInicioExibicao}T00:00:00Z`).toISOString(),
+        dataFimExibicao: new Date(`${data.dataFimExibicao}T00:00:00Z`).toISOString()
+      };
+
       if (isEditing) {
-        await updateFilme(id, data);
+        await updateFilme(id, payload as any);
         alert('Filme atualizado com sucesso!');
       } else {
-        await createFilme(data);
+        await createFilme(payload as any);
         alert('Filme cadastrado com sucesso!');
       }
       navigate('/filmes');
-    } catch {
+    } catch (error) {
+      console.error(error);
       alert("Erro ao salvar o filme.");
     }
   };
@@ -72,14 +93,9 @@ const FilmesForm = () => {
           <div className="invalid-feedback">{errors.titulo?.message}</div>
         </div>
 
-        {/* Novo Campo: Elenco */}
         <div className="mb-3">
           <label className="form-label">Elenco</label>
-          <input
-            {...register('elenco')}
-            className={`form-control ${errors.elenco ? 'is-invalid' : ''}`}
-            placeholder="Ex: Wagner Moura, Selton Mello"
-          />
+          <input {...register('elenco')} className={`form-control ${errors.elenco ? 'is-invalid' : ''}`} placeholder="Ex: Wagner Moura, Selton Mello" />
           <div className="invalid-feedback">{errors.elenco?.message}</div>
         </div>
 
@@ -95,9 +111,11 @@ const FilmesForm = () => {
             <input type="number" {...register('duracao', { valueAsNumber: true })} className={`form-control ${errors.duracao ? 'is-invalid' : ''}`} />
             <div className="invalid-feedback">{errors.duracao?.message}</div>
           </div>
+          
           <div className="col-md-4">
             <label className="form-label">Classificação</label>
-            <select {...register('classificacao')} className="form-select">
+            {/* Atualizado para classificacaoEtaria */}
+            <select {...register('classificacaoEtaria')} className={`form-select ${errors.classificacaoEtaria ? 'is-invalid' : ''}`}>
               <option value="">Selecione...</option>
               <option value="Livre">Livre</option>
               <option value="10">10 anos</option>
@@ -106,21 +124,22 @@ const FilmesForm = () => {
               <option value="16">16 anos</option>
               <option value="18">18 anos</option>
             </select>
+            <div className="invalid-feedback">{errors.classificacaoEtaria?.message}</div>
           </div>
+
           <div className="col-md-4">
             <label className="form-label">Gênero</label>
-            <select {...register('genero')} className="form-select">
+            {/* Atualizado para generoId e usando renderização dinâmica */}
+            <select {...register('generoId')} className={`form-select ${errors.generoId ? 'is-invalid' : ''}`}>
               <option value="">Selecione...</option>
-              <option value="Ação">Ação</option>
-              <option value="Comédia">Comédia</option>
-              <option value="Drama">Drama</option>
-              <option value="Terror">Terror</option>
-              <option value="Ficção">Ficção</option>
+              {listaGeneros.map((g) => (
+                <option key={g.id} value={g.id}>{g.nome}</option>
+              ))}
             </select>
+            <div className="invalid-feedback">{errors.generoId?.message}</div>
           </div>
         </div>
 
-        {/* Novos Campos: Datas de Exibição */}
         <div className="row mb-3">
           <div className="col-md-6">
             <label className="form-label">Início Exibição</label>
@@ -129,8 +148,9 @@ const FilmesForm = () => {
           </div>
           <div className="col-md-6">
             <label className="form-label">Fim Exibição</label>
-            <input type="date" {...register('dataFinalExibicao')} className={`form-control ${errors.dataFinalExibicao ? 'is-invalid' : ''}`} />
-            <div className="invalid-feedback">{errors.dataFinalExibicao?.message}</div>
+            {/* Atualizado para dataFimExibicao */}
+            <input type="date" {...register('dataFimExibicao')} className={`form-control ${errors.dataFimExibicao ? 'is-invalid' : ''}`} />
+            <div className="invalid-feedback">{errors.dataFimExibicao?.message}</div>
           </div>
         </div>
 
