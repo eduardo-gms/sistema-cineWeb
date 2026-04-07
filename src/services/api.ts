@@ -7,6 +7,10 @@ const api = axios.create({
         ? `https://${window.location.hostname.replace('5173', '3000')}`
         : 'http://localhost:3000'
     ),
+    headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+    }
 });
 
 // Gêneros

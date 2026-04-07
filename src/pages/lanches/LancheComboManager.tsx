@@ -40,9 +40,7 @@ const LancheCombosManager = () => {
   const onSubmit = async (data: LancheComboForm) => {
     try {
       const payload: Omit<LancheCombo, 'id'> = {
-        ...data,
-        quantidade: 0,
-        subTotal: 0
+        ...data
       };
 
       if (editingId) {
