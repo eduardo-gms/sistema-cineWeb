@@ -2,7 +2,11 @@ import axios from 'axios';
 import type { Filme, Sala, LancheCombo, Sessao, Pedido, Genero } from '../types';
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+    baseURL: import.meta.env.VITE_API_URL || (
+        window.location.hostname.includes('github.dev') 
+        ? `https://${window.location.hostname.replace('5173', '3000')}`
+        : 'http://localhost:3000'
+    ),
 });
 
 // Gêneros
@@ -41,4 +45,4 @@ export const deleteSessao = (id: string | number) => api.delete(`/sessoes/${id}`
 export const getPedidos = () => api.get<Pedido[]>('/pedidos');
 export const createPedido = (data: Omit<Pedido, 'id'>) => api.post('/pedidos', data);
 
-export default api;
+export default api;
