@@ -1,0 +1,97 @@
+version: '3.8'
+
+# ========================================================
+# CineWeb — Docker Compose Unificado
+# Orquestra todos os serviços do ecossistema em uma rede bridge.
+# ========================================================
+
+services:
+  # ─── PostgreSQL ───
+  db:
+    image: postgres:15
+    container_name: cineweb-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-60451}
+      POSTGRES_DB: ${POSTGRES_DB:-cineweb}
+    ports:
+      - '5432:5432'
+    networks:
+      - cineweb-network
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ─── Backend (NestJS API) ───
+  backend:
+    build: ./sistema-cineWeb-backend
+    container_name: cineweb-backend
+    ports:
+      - '3000:3000'
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-60451}@cineweb-db:5432/${POSTGRES_DB:-cineweb}?schema=public
+      - JWT_SECRET=${JWT_SECRET:-cineweb-jwt-secret-dev-2026}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-cineweb-jwt-refresh-secret-dev-2026}
+      - PORT=3000
+    networks:
+      - cineweb-network
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./sistema-cineWeb-backend:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  # ─── Frontend Web (Vite + React) ───
+  frontend:
+    build: ./sistema-cineWeb-frontend
+    container_name: cineweb-frontend
+    ports:
+      - '5173:5173'
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    networks:
+      - cineweb-network
+    depends_on:
+      - backend
+    volumes:
+      - ./sistema-cineWeb-frontend/src:/app/src
+    restart: unless-stopped
+
+  # ─── Mobile (Expo / React Native) ───
+  # NOTA: O mobile Expo funciona melhor fora do Docker.
+  # Este serviço é OPCIONAL — use apenas para desenvolvimento local
+  # quando quiser um ambiente isolado. Para Expo Go no celular físico,
+  # recomenda-se rodar `npx expo start` diretamente na máquina host.
+  mobile:
+    build: ./sistema-cineWeb-mobile
+    container_name: cineweb-mobile
+    ports:
+      - '8081:8081'
+    environment:
+      # Substitua pelo IP da sua máquina host na rede Wi-Fi local
+      # para que o Expo Go no celular físico consiga se conectar.
+      # Exemplo: 192.168.1.100
+      - REACT_NATIVE_PACKAGER_HOSTNAME=${HOST_IP:-0.0.0.0}
+    networks:
+      - cineweb-network
+    depends_on:
+      - backend
+    volumes:
+      - ./sistema-cineWeb-mobile:/app
+      - /app/node_modules
+    profiles:
+      - mobile  # Não sobe por padrão; use: docker compose --profile mobile up
+
+volumes:
+  pgdata:
+
+networks:
+  cineweb-network:
+    driver: bridge
