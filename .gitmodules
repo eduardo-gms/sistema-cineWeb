@@ -1,0 +1,9 @@
+[submodule "sistema-cineWeb-backend"]
+	path = sistema-cineWeb-backend
+	url = https://github.com/eduardo-gms/sistema-cineWeb-backend.git
+[submodule "sistema-cineWeb-frontend"]
+	path = sistema-cineWeb-frontend
+	url = https://github.com/eduardo-gms/sistema-cineWeb-frontend.git
+[submodule "sistema-cineWeb-mobile"]
+	path = sistema-cineWeb-mobile
+	url = https://github.com/eduardo-gms/sistema-cineWeb-mobile.git
