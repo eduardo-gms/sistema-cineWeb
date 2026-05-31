@@ -11,8 +11,12 @@ Ecossistema completo para gerenciamento de cinema composto por **3 repositórios
 ### Funcionalidades Principais
 
 - 🔐 Autenticação JWT com Refresh Token (Access Token 15min + Refresh Token 7d)
-- 👥 RBAC — Controle de acesso por perfil (ADMIN / CUSTOMER)
-- 🎟️ Emissão de comprovante de ingressos (PDF no Web, QR Code no Mobile)
+- 👥 RBAC — Controle de acesso por perfil (ADMIN / CUSTOMER / Público)
+- 📝 Fluxos completos de Cadastro e Recuperação de Senha
+- 🎟️ Listagem pública de filmes e sessões (filtro dinâmico integrado)
+- 🛒 Gestão de Pedidos completos no app (englobando múltiplos ingressos e lanches em uma única compra)
+- 🎟️ Emissão de comprovante unificado detalhado com QR Code único validando o pedido inteiro
+- 📄 Exportação nativa do comprovante em PDF e compartilhamento (Web e Mobile)
 - 📱 Armazenamento local e sincronização offline (DB Sync no Mobile)
 - 🐳 Orquestração Docker com `docker compose`
 - 📖 Documentação Swagger (API interativa em `/api`)
@@ -76,15 +80,13 @@ cineWeb/                        ← Repositório orquestrador
 
 ## 🔑 Credenciais de Teste (Seed)
 
-Ao subir o backend pela primeira vez, o seed cria automaticamente dois usuários:
+Ao subir o backend pela primeira vez, o seed cria automaticamente um usuário administrador:
 
 | Perfil | E-mail | Senha |
 |--------|--------|-------|
 | **ADMIN** | `admin@cineweb.com` | `admin123` |
-| **CUSTOMER** | `cliente@cineweb.com` | `cliente123` |
 
 > O **ADMIN** pode gerenciar filmes, salas, sessões, gêneros e lanches.
-> O **CUSTOMER** pode criar pedidos e visualizar comprovantes.
 
 ---
 
