@@ -55,7 +55,9 @@ services:
     ports:
       - '5173:5173'
     environment:
-      - VITE_API_URL=http://localhost:3000
+      # A lógica dinâmica no api.ts já define localhost:3000 como fallback local
+      # e resolve a URL do codespace automaticamente.
+      - NODE_ENV=development
     networks:
       - cineweb-network
     depends_on:
